@@ -19,7 +19,7 @@ window.DACTYLO = {
 
   // OAuth-client van het type "Webapplicatie" (Cloud-project Dalton Classroom). Een client-ID is
   // niet geheim. Leeg = zonder Google: dan plak je de klaslijsten zelf en blijft alles in de browser.
-  googleClientId: '',
+  googleClientId: '480511269053-tpijkg270tdafm8ukfuijji8a6vcio60.apps.googleusercontent.com',
 
   tests: [
     {
