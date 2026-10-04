@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="nl-BE">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dactylo · 4ORLO</title>
+<meta name="description" content="Typetest dactylo voor 4ORLO: leerling kiezen, test op de middelste rij, techniek beoordelen, punt op 20 en export voor Smartschool.">
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="top-in">
+    <div class="brand">
+      <img src="assets/dalton-gent-logo.png" alt="GO! Dalton Gent" class="logo">
+      <div>
+        <h1>Dactylo · 4ORLO</h1>
+        <p class="sub">Typetest met de juiste vingerzetting</p>
+      </div>
+    </div>
+    <label class="test-kies">
+      <span>Test</span>
+      <select id="test-kies"></select>
+    </label>
+    <nav class="nav" aria-label="Onderdelen">
+      <button type="button" class="nav-knop" data-view="leerlingen">Leerlingen</button>
+      <button type="button" class="nav-knop" data-view="resultaten">Resultaten</button>
+      <button type="button" class="nav-knop" data-view="gegevens">Klaslijsten en back-up</button>
+    </nav>
+  </div>
+</header>
+
+<div id="melding-opslag" class="banner warn" hidden>
+  Deze browser bewaart niets (privévenster of geblokkeerde opslag). Resultaten gaan verloren als je de pagina sluit.
+</div>
+<div id="melding-backup" class="banner tip" hidden>
+  <span id="melding-backup-tekst"></span>
+  <button type="button" class="btn btn-klein" data-actie="backup">Back-up downloaden</button>
+</div>
+
+<main class="wrap">
+
+  <!-- ===== LEERLINGEN ===== -->
+  <section class="view" id="v-leerlingen" aria-labelledby="h-leerlingen">
+    <div class="view-kop">
+      <h2 id="h-leerlingen">Wie test je nu?</h2>
+      <div class="tabs klas-tabs" role="tablist" aria-label="Klas"></div>
+    </div>
+    <p class="hint" id="test-uitleg-lijst"></p>
+    <div id="leerling-lijst" class="leerling-lijst"></div>
+    <div id="lijst-leeg" class="leeg" hidden>
+      <p><strong>Deze klas heeft nog geen klaslijst.</strong></p>
+      <p>Plak de namen bij <em>Klaslijsten en back-up</em>, in dezelfde volgorde als in je Skore-puntenboek.</p>
+      <button type="button" class="btn btn-primair" data-view="gegevens">Klaslijst invullen</button>
+    </div>
+  </section>
+
+  <!-- ===== TEST ===== -->
+  <section class="view" id="v-test" aria-labelledby="h-test" hidden>
+    <div class="test-kop">
+      <div>
+        <p class="kicker" id="test-titel"></p>
+        <h2 id="h-test">Aan de beurt: <span id="test-naam"></span></h2>
+      </div>
+      <div class="klok" aria-live="off">
+        <span id="klok-tijd" class="klok-tijd">60</span>
+        <span class="klok-label">seconden</span>
+      </div>
+    </div>
+    <div class="balk"><div class="balk-vul" id="klok-balk"></div></div>
+
+    <div id="waarschuw-caps" class="banner warn klein" hidden>Caps Lock staat aan. Zet hem uit: hoofdletters tellen niet.</div>
+    <div id="waarschuw-qwerty" class="banner warn klein" hidden>Dit toetsenbord typt in <strong>QWERTY</strong>. Zet de indeling op <strong>AZERTY (België)</strong> en begin opnieuw.</div>
+
+    <div class="instructie" id="instructie">
+      <ol>
+        <li>Leg je <strong>wijsvingers op F en J</strong>. Je voelt er een streepje.</li>
+        <li>Kijk naar het <strong>scherm</strong>, niet naar je handen.</li>
+        <li>Typ de letters na. Een fout? Typ gewoon de juiste letter.</li>
+        <li>De tijd start bij je <strong>eerste toets</strong>.</li>
+      </ol>
+    </div>
+
+    <div class="tekst-box"><div id="tekst" class="tekst" aria-label="Te typen tekst"></div></div>
+
+    <div id="toetsenbord-blok">
+      <div id="toetsenbord" class="toetsenbord" aria-hidden="true"></div>
+      <p class="volgende" id="volgende"></p>
+    </div>
+
+    <div class="knoppen">
+      <button type="button" class="btn" data-actie="terug-lijst">Andere leerling</button>
+      <label class="schakel"><input type="checkbox" id="toon-toetsenbord" checked> Toetsenbord tonen</label>
+      <button type="button" class="btn" data-actie="opnieuw">Opnieuw beginnen</button>
+    </div>
+  </section>
+
+  <!-- ===== BEOORDELING ===== -->
+  <section class="view" id="v-beoordeling" aria-labelledby="h-beoordeling" hidden>
+    <p class="kicker" id="beoordeling-titel"></p>
+    <h2 id="h-beoordeling">Hoe ging het, <span id="beoordeling-naam"></span>?</h2>
+
+    <div class="stats" id="stats"></div>
+    <p class="hint" id="probleemtoetsen"></p>
+
+    <h3 class="blok-titel">Vul samen in</h3>
+    <div id="vragen" class="vragen"></div>
+
+    <label class="opmerking">
+      <span>Opmerking (niet verplicht)</span>
+      <textarea id="opmerking" rows="2" placeholder="Bijvoorbeeld: let op je linkerpink bij de q."></textarea>
+    </label>
+
+    <div class="totaal" id="totaal"></div>
+
+    <div class="knoppen">
+      <button type="button" class="btn" data-actie="niet-bewaren">Niet bewaren</button>
+      <button type="button" class="btn btn-primair" id="knop-bewaar" data-actie="bewaar" disabled>Bewaar het punt</button>
+    </div>
+  </section>
+
+  <!-- ===== RESULTATEN ===== -->
+  <section class="view" id="v-resultaten" aria-labelledby="h-resultaten" hidden>
+    <div class="view-kop">
+      <h2 id="h-resultaten">Resultaten</h2>
+      <div class="tabs klas-tabs" role="tablist" aria-label="Klas"></div>
+    </div>
+    <p class="hint">Per leerling telt de laatste poging van deze test. Klik op een naam voor alle pogingen en de vooruitgang.</p>
+    <div class="tabel-wrap"><table class="tabel" id="tabel"></table></div>
+
+    <div class="export">
+      <h3 class="blok-titel">Naar Smartschool</h3>
+      <p>De punten staan in de volgorde van je klaslijst. Wie nog niet getest is, krijgt een lege regel.</p>
+      <div class="knoppen links">
+        <button type="button" class="btn btn-primair" data-actie="kopieer-punten">Kopieer de punten</button>
+        <button type="button" class="btn" data-actie="kopieer-naam-punt">Kopieer naam + punt</button>
+        <button type="button" class="btn" data-actie="csv">Download voor Excel (.csv)</button>
+      </div>
+      <p class="hint">In Skore: open het puntenboek, maak de evaluatie aan (op 20) en zet de punten erin, van boven naar onder.</p>
+    </div>
+  </section>
+
+  <!-- ===== GEGEVENS ===== -->
+  <section class="view" id="v-gegevens" aria-labelledby="h-gegevens" hidden>
+    <h2 id="h-gegevens">Klaslijsten en back-up</h2>
+    <p class="hint">Eén naam per regel, in dezelfde volgorde als in je Skore-puntenboek (meestal alfabetisch op familienaam). Zo staan de punten later in de juiste volgorde.</p>
+    <div id="klaslijsten" class="klaslijsten"></div>
+    <div class="knoppen links">
+      <button type="button" class="btn btn-primair" data-actie="bewaar-lijsten">Bewaar de klaslijsten</button>
+    </div>
+
+    <div class="privacy">
+      <h3 class="blok-titel">Waar staan de gegevens?</h3>
+      <p>Namen en punten blijven <strong>in deze browser, op deze computer</strong>. Ze gaan niet naar internet en niet naar GitHub. Gebruik daarom altijd dezelfde computer en dezelfde browser, en maak geregeld een back-up.</p>
+      <div class="knoppen links">
+        <button type="button" class="btn" data-actie="backup">Back-up downloaden</button>
+        <label class="btn">Back-up terugzetten<input type="file" id="backup-bestand" accept=".json,application/json" hidden></label>
+      </div>
+      <p class="hint" id="backup-info"></p>
+    </div>
+  </section>
+</main>
+
+<dialog id="detail" class="detail" aria-labelledby="detail-titel">
+  <div class="detail-kop">
+    <h2 id="detail-titel"></h2>
+    <button type="button" class="btn btn-klein" data-actie="sluit-detail">Sluiten</button>
+  </div>
+  <div id="detail-inhoud"></div>
+</dialog>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script src="js/testen.js"></script>
+<script src="js/dactylo.js"></script>
+</body>
+</html>

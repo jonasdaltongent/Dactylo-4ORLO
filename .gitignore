@@ -1,0 +1,7 @@
+# nooit leerlinggegevens in git: back-ups en exports blijven lokaal
+dactylo-4orlo-backup-*.json
+*.csv
+.DS_Store
+._*
+Icon?
+desktop.ini
