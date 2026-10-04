@@ -23,6 +23,10 @@
       <span>Test</span>
       <select id="test-kies"></select>
     </label>
+    <div class="google" id="google-blok" hidden>
+      <button type="button" class="btn btn-klein" id="knop-google" data-actie="verbind">Verbind met Google</button>
+      <span class="google-status" id="google-status"></span>
+    </div>
     <nav class="nav" aria-label="Onderdelen">
       <button type="button" class="nav-knop" data-view="leerlingen">Leerlingen</button>
       <button type="button" class="nav-knop" data-view="resultaten">Resultaten</button>
@@ -51,8 +55,9 @@
     <div id="leerling-lijst" class="leerling-lijst"></div>
     <div id="lijst-leeg" class="leeg" hidden>
       <p><strong>Deze klas heeft nog geen klaslijst.</strong></p>
-      <p>Plak de namen bij <em>Klaslijsten en back-up</em>, in dezelfde volgorde als in je Skore-puntenboek.</p>
-      <button type="button" class="btn btn-primair" data-view="gegevens">Klaslijst invullen</button>
+      <p class="met-google">Klik bovenaan op <strong>Verbind met Google</strong>: dan komen de klaslijsten uit Classroom.</p>
+      <p class="zonder-google">Plak de namen bij <em>Klaslijsten en back-up</em>, in dezelfde volgorde als in je Skore-puntenboek.</p>
+      <button type="button" class="btn btn-primair zonder-google" data-view="gegevens">Klaslijst invullen</button>
     </div>
   </section>
 
@@ -131,28 +136,52 @@
 
     <div class="export">
       <h3 class="blok-titel">Naar Smartschool</h3>
-      <p>De punten staan in de volgorde van je klaslijst. Wie nog niet getest is, krijgt een lege regel.</p>
-      <div class="knoppen links">
-        <button type="button" class="btn btn-primair" data-actie="kopieer-punten">Kopieer de punten</button>
-        <button type="button" class="btn" data-actie="kopieer-naam-punt">Kopieer naam + punt</button>
-        <button type="button" class="btn" data-actie="csv">Download voor Excel (.csv)</button>
+      <div class="met-google">
+        <ol class="stappen">
+          <li>Klik op <strong>Zet de punten in Classroom</strong>. De tool maakt in deze klas de opdracht <em id="classroom-titel"></em> (op 20) en vult de punten in.</li>
+          <li>In Skore: klik op <strong>+</strong> › <strong>Resultaten importeren</strong> › <strong>Google Classroom</strong> en kies die opdracht.</li>
+        </ol>
+        <div class="knoppen links">
+          <button type="button" class="btn btn-primair" id="knop-classroom" data-actie="classroom">Zet de punten in Classroom</button>
+          <span class="hint" id="classroom-info"></span>
+        </div>
       </div>
-      <p class="hint">In Skore: open het puntenboek, maak de evaluatie aan (op 20) en zet de punten erin, van boven naar onder.</p>
+      <details class="andere-export">
+        <summary>Andere manieren: kopiëren of Excel</summary>
+        <p>De punten staan in de volgorde van je klaslijst. Wie nog niet getest is, krijgt een lege regel.</p>
+        <div class="knoppen links">
+          <button type="button" class="btn" data-actie="kopieer-punten">Kopieer de punten</button>
+          <button type="button" class="btn" data-actie="kopieer-naam-punt">Kopieer naam + punt</button>
+          <button type="button" class="btn" data-actie="csv">Download voor Excel (.csv)</button>
+        </div>
+      </details>
     </div>
   </section>
 
   <!-- ===== GEGEVENS ===== -->
   <section class="view" id="v-gegevens" aria-labelledby="h-gegevens" hidden>
     <h2 id="h-gegevens">Klaslijsten en back-up</h2>
-    <p class="hint">Eén naam per regel, in dezelfde volgorde als in je Skore-puntenboek (meestal alfabetisch op familienaam). Zo staan de punten later in de juiste volgorde.</p>
-    <div id="klaslijsten" class="klaslijsten"></div>
-    <div class="knoppen links">
-      <button type="button" class="btn btn-primair" data-actie="bewaar-lijsten">Bewaar de klaslijsten</button>
+    <div class="met-google">
+      <p>Met <strong>Verbind met Google</strong> komen de klaslijsten uit Classroom. Komt er een leerling bij, klik dan opnieuw op <em>Vernieuw de klaslijsten</em>.</p>
+      <div id="classroom-klassen" class="hint"></div>
+      <div class="knoppen links">
+        <button type="button" class="btn btn-primair" data-actie="vernieuw-klassen">Vernieuw de klaslijsten uit Classroom</button>
+      </div>
     </div>
+    <details class="zonder-google-blok" id="handmatig">
+      <summary>Klaslijsten zelf invullen (zonder Google)</summary>
+      <p class="hint">Eén naam per regel, in dezelfde volgorde als in je Skore-puntenboek (meestal alfabetisch op familienaam).</p>
+      <div id="klaslijsten" class="klaslijsten"></div>
+      <div class="knoppen links">
+        <button type="button" class="btn btn-primair" data-actie="bewaar-lijsten">Bewaar de klaslijsten</button>
+      </div>
+    </details>
 
     <div class="privacy">
       <h3 class="blok-titel">Waar staan de gegevens?</h3>
-      <p>Namen en punten blijven <strong>in deze browser, op deze computer</strong>. Ze gaan niet naar internet en niet naar GitHub. Gebruik daarom altijd dezelfde computer en dezelfde browser, en maak geregeld een back-up.</p>
+      <p class="met-google">Ben je verbonden met Google, dan staan klaslijsten en resultaten in één bestand in <strong>je eigen Google Drive</strong> (<em id="drive-naam"></em>). De tool slaat het na elke wijziging vanzelf op en laadt het bij het verbinden, ook op een andere computer. Niets staat op GitHub.</p>
+      <p class="zonder-google">Namen en punten blijven <strong>in deze browser, op deze computer</strong>. Ze gaan niet naar internet en niet naar GitHub. Gebruik daarom altijd dezelfde computer en dezelfde browser, en maak geregeld een back-up.</p>
+      <p>Een back-up is een extra kopie als bestand. Met <em>Back-up terugzetten</em> laad je ze opnieuw.</p>
       <div class="knoppen links">
         <button type="button" class="btn" data-actie="backup">Back-up downloaden</button>
         <label class="btn">Back-up terugzetten<input type="file" id="backup-bestand" accept=".json,application/json" hidden></label>
@@ -173,6 +202,8 @@
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
 <script src="js/testen.js"></script>
+<script src="js/google.js"></script>
 <script src="js/dactylo.js"></script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 </body>
 </html>

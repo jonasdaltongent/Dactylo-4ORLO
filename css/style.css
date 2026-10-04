@@ -185,6 +185,22 @@ textarea:focus { outline: none; border-color: var(--navy); }
 .klaslijst-titel { display: block; font-weight: 700; color: var(--navy-deep); margin-bottom: .3rem; }
 .privacy { margin-top: 1.6rem; border-top: 1px solid var(--line); }
 
+/* ---------- Google ---------- */
+body:not(.google-aan) .met-google { display: none !important; }
+body.google-aan .zonder-google { display: none !important; }
+.google { display: flex; align-items: center; gap: .6rem; }
+.google-status { font-size: .88rem; color: var(--ok); font-weight: 700; max-width: 22rem; }
+.google-status.fout { color: var(--warn); }
+.stappen { margin: .2rem 0 0; padding-left: 1.3rem; }
+.stappen li { margin-bottom: .3rem; }
+.cr-ok { color: var(--ok); font-weight: 700; white-space: nowrap; }
+.cr-nog { color: var(--tip); font-weight: 700; white-space: nowrap; }
+details.andere-export, details.zonder-google-blok { margin-top: 1rem; border: 1px solid var(--line); border-radius: var(--radius-sm); padding: .6rem 1rem; }
+details.andere-export summary, details.zonder-google-blok summary { cursor: pointer; font-weight: 700; color: var(--navy-deep); }
+details[open] > summary { margin-bottom: .5rem; }
+#classroom-klassen p { margin: 0 0 .2rem; }
+#classroom-info a { color: var(--navy); font-weight: 700; }
+
 /* ---------- detail en melding ---------- */
 .detail { border: 0; border-radius: var(--radius); box-shadow: 0 20px 60px rgba(29, 35, 64, .3); padding: 1.2rem 1.4rem; width: min(760px, calc(100% - 32px)); max-height: 85vh; }
 .detail::backdrop { background: rgba(29, 35, 64, .45); }

@@ -11,17 +11,27 @@ vooruitgang per leerling kunt volgen.
 
 ## 1. Openen
 
-- Dubbelklik op `index.html`; de tool opent in je browser. Er is geen internet nodig.
-- Wil je de tool via een webadres openen, dan kan dat via GitHub Pages (nog niet gepubliceerd). De
-  pagina bevat geen namen. Die tik je zelf in, en ze blijven in je browser.
-- **Gebruik altijd dezelfde computer, dezelfde browser en dezelfde manier van openen.** De gegevens
-  staan in de browser (zie §6). Opent hij op een andere manier, dan zie je een lege tool.
+De tool staat op **[jonasdaltongent.github.io/Dactylo-4ORLO](https://jonasdaltongent.github.io/Dactylo-4ORLO/)**.
+Zet dat adres als bladwijzer op de computer in je lokaal. De pagina zelf bevat geen namen of
+punten. Een nieuwe test die erbij komt, verschijnt daar vanzelf.
 
-## 2. Eerste keer: de klaslijsten
+## 2. Bij het begin van elk Dactylo-uur: Verbind met Google
 
-Klik op **Klaslijsten en back-up** en plak per klas de namen, **één per regel**. Gebruik
-**dezelfde volgorde als in je Skore-puntenboek** (meestal alfabetisch op familienaam). De export
-naar Smartschool volgt die volgorde. Klik op **Bewaar de klaslijsten**.
+Klik rechtsboven op **Verbind met Google** en kies je schoolaccount. De eerste keer vraagt Google
+of de tool je klassen, je klaslijsten en de opdrachten mag beheren, en bestanden in je Drive mag
+maken. Sta alles toe.
+
+Daarna doet de tool drie dingen:
+
+- hij haalt de **klaslijsten van 4ORLOa en 4ORLOb uit Classroom**, gesorteerd op familienaam;
+- hij laadt je **resultaten uit één bestand in je Google Drive**
+  (*Dactylo 4ORLO - gegevens (niet verwijderen).json*, in Mijn Drive);
+- hij bewaart elke wijziging meteen opnieuw in dat bestand. Rechtsboven staat dan
+  "✓ Verbonden · opgeslagen in Drive om …".
+
+De verbinding vervalt na ongeveer een uur. De tool meldt dat, en wat nog niet in Drive staat,
+blijft in de browser tot je opnieuw op **Verbind met Google** klikt. Komt er een leerling bij in
+Classroom, klik dan bij *Klaslijsten en back-up* op **Vernieuw de klaslijsten uit Classroom**.
 
 ## 3. Een leerling testen
 
@@ -63,39 +73,42 @@ bewust laag gehouden: 8 woorden per minuut is 40 tekens per minuut.
 
 Alles staat in `js/testen.js`: de drempels, de vragen, de tijd en de tekst. Pas het daar aan.
 
-## 5. Naar Smartschool
+## 5. Naar Smartschool, via Classroom
 
-Klik op **Resultaten** en kies de klas. De punten staan in de volgorde van je klaslijst, en wie nog
-niet getest is, krijgt een lege regel.
+1. Klik op **Resultaten**, kies de klas en klik op **Zet de punten in Classroom**.
+   - De eerste keer maakt de tool in die klas de opdracht **Dactylo — Test 1 · De middelste rij**
+     (op 20, zonder deadline). De leerlingen zien die opdracht, met de uitleg dat ze niets moeten
+     inleveren.
+   - De punten worden ingevuld en **teruggegeven**: elke leerling ziet zijn of haar punt in
+     Classroom.
+   - Alleen wie getest is, krijgt een punt. In de tabel zie je per leerling "✓ staat erin".
+2. In Skore: klik op **+** › **Resultaten importeren** › **Google Classroom** en kies die opdracht.
 
-- **Kopieer de punten**: één punt per regel, om in Skore over te nemen of te plakken.
-- **Kopieer naam + punt**: om in een rekenblad te plakken.
-- **Download voor Excel (.csv)**: alle details per leerling (snelheid, nauwkeurigheid, techniek,
-  opmerking).
+Na een herkansing zie je "nog niet" bij die leerling. Klik dan opnieuw op **Zet de punten in
+Classroom**: alleen de gewijzigde punten gaan mee, naar dezelfde opdracht.
 
-Maak in Skore de evaluatie aan (op 20) en zet de punten erin, van boven naar onder.
+Punten zetten kan alleen in een opdracht die de tool zelf maakte (zo werkt de Classroom-API).
+Maak de dactylo-opdracht dus niet zelf aan in Classroom.
 
-> [!NOTE]
-> **Nog na te gaan in Skore:** kun je een gekopieerde kolom plakken in de eerste cel van een
-> evaluatie? Dat staat nergens in de documentatie.
->
-> **Rechtstreeks kan wél via Google Classroom.** Smartschool kan de punten van een
-> Classroom-opdracht met één klik in Skore importeren (**+** › **Resultaten importeren**). Dat moet
-> de school wel geactiveerd hebben, en dan moet *Google Classroom* in die lijst staan. Staat het er,
-> dan kan deze tool de punten in een Classroom-opdracht zetten. Dat is nog niet gebouwd.
+*Andere manieren* (onder de knop): de punten kopiëren in de volgorde van de klaslijst, naam + punt
+kopiëren, of een bestand voor Excel met alle details.
 
 ## 6. Gegevens en privacy
 
-- Namen en punten staan **alleen in de browser van deze computer** (localStorage, sleutel
-  `dactylo_4orlo_v1`). Ze gaan niet naar internet en staan niet in git.
-- **Maak geregeld een back-up** (*Klaslijsten en back-up* › **Back-up downloaden**). Je krijgt een
-  JSON-bestand in Downloads. Met **Back-up terugzetten** zet je het op een andere computer of na
-  het wissen van de browsergegevens terug. De tool herinnert je eraan als er nieuwe resultaten zijn
-  zonder back-up.
-- Wis je in de browser de site-gegevens of de geschiedenis met cookies, dan zijn de resultaten weg
-  (behalve in je back-up). Een privévenster bewaart niets; de tool waarschuwt dan.
-- Een naam wijzigen in de klaslijst koppelt de oude resultaten los: ze blijven bewaard onder de oude
-  naam.
+- Namen en punten staan in **je eigen Google Drive** (het bestand uit §2) en, als kopie, in de
+  browser van de computer waarop je werkt. Ze staan **niet op GitHub**: daar staat alleen de lege
+  tool.
+- Het toegangsbewijs van Google staat alleen in het geheugen van de pagina en vervalt na een uur.
+  De tool ziet in Drive alleen de bestanden die hij zelf maakte.
+- Ook op een andere computer zie je alles terug: open het adres en klik op **Verbind met Google**.
+  Wat in die browser stond, wordt samengevoegd met het bestand in Drive; er gaat niets verloren.
+- **Back-up downloaden** (*Klaslijsten en back-up*) maakt een extra kopie als bestand. Met **Back-up
+  terugzetten** voeg je die weer toe.
+- Is het bestand in Drive ooit onleesbaar, dan overschrijft de tool het niet en meldt hij het. Zet
+  het dan in de prullenbak van Drive en verbind opnieuw: de tool maakt een nieuw bestand met wat in
+  de browser staat.
+- **Zonder Google** (als `googleClientId` in `js/testen.js` leeg is) plak je de klaslijsten zelf,
+  en staat alles alleen in de browser. Maak dan geregeld een back-up.
 
 ## 7. Een nieuwe test toevoegen
 
@@ -104,7 +117,26 @@ Kopieer in `js/testen.js` het blok van test 1, geef het een nieuwe `id` (bijvoor
 in de keuzelijst bovenaan. Verander de `id` van een test niet meer zodra er resultaten mee bewaard
 zijn.
 
-## 8. Wat de tool niet kan
+## 8. De koppeling met Google instellen (eenmalig)
+
+De tool gebruikt het Cloud-project **Dalton Classroom** (`spatial-ship-509917-q2`), hetzelfde als
+`_tools/zet_opdracht_klaar.py`. Die koppeling heeft een sleutel van het type *Desktop*. Een webpagina
+heeft een eigen sleutel van het type **Webapplicatie** nodig:
+
+1. Ga naar [Google Auth Platform › Clients](https://console.cloud.google.com/auth/clients?project=spatial-ship-509917-q2)
+   en meld je aan met je schoolaccount.
+2. Klik op **Create client** en kies bij **Application type** **Web application**. Geef een naam,
+   bijvoorbeeld *Dactylo 4ORLO*.
+3. Klik onder **Authorized JavaScript origins** op **Add URI** en voeg toe:
+   `https://jonasdaltongent.github.io` en `http://localhost:8732` (om te testen).
+4. Klik op **Create** en kopieer de **Client ID** (eindigt op `.apps.googleusercontent.com`).
+5. Zet die tussen de aanhalingstekens bij `googleClientId` in `js/testen.js` en publiceer opnieuw.
+
+Een client-ID is niet geheim; een *client secret* gebruikt deze tool niet. De knopnamen komen uit
+de [Google-handleiding](https://developers.google.com/workspace/guides/create-credentials) (Engelse
+versie, nagelezen op 4 oktober 2026); in een Nederlandse console kunnen ze anders heten.
+
+## 9. Wat de tool niet kan
 
 - De **vingerzetting** zelf kan een computer niet zien. Daarom vul je de techniekvragen samen in,
   terwijl je meekijkt.
@@ -114,4 +146,6 @@ zijn.
 ---
 
 *Gemaakt op 4 oktober 2026. Getest in Chrome met gesimuleerde AZERTY-aanslagen, op 1366×768,
-1024×768 en een smal scherm. Nog niet met een klas gebruikt.*
+1024×768 en een smal scherm. De koppeling met Google is getest tegen een nagebootste Classroom en
+Drive (verbinden, klaslijsten, opslaan, andere computer, herkansing, verlopen verbinding, onleesbaar
+bestand), nog niet met de echte. Nog niet met een klas gebruikt.*

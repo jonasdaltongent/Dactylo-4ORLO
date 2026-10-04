@@ -1,17 +1,22 @@
 /* ==========================================================================
    Dactylo · 4ORLO — de tool
-   De tests en de puntenverdeling staan in js/testen.js.
+   De tests en de puntenverdeling staan in js/testen.js; de koppeling met
+   Google (Classroom en Drive) staat in js/google.js.
 
-   Gegevens: alles staat in localStorage van deze browser (sleutel hieronder).
-   Er gaat niets naar internet. Back-up = een JSON-bestand dat je downloadt.
+   Gegevens:
+   - altijd in localStorage van deze browser (sleutel hieronder);
+   - verbonden met Google: ook in één bestand in Mijn Drive, na elke wijziging;
+   - back-up = een JSON-bestand dat je downloadt en terugzet.
    ========================================================================== */
 (function () {
   'use strict';
 
   var CFG = window.DACTYLO;
+  var G = window.DactyloGoogle;
   var SLEUTEL = 'dactylo_4orlo_v1';
   var VOORKEUR = 'dactylo_4orlo_voorkeur';
   var BACKUP_NA_DAGEN = 7;
+  var MAX_PUNTEN = 20;
 
   // ---------- vingers op een AZERTY-toetsenbord ----------
   var RIJEN = [
@@ -49,49 +54,93 @@
   function puntTekst(p) { return (Math.round(p * 10) / 10).toString().replace('.', ','); }
   function datumTekst(iso) {
     try { return new Date(iso).toLocaleDateString('nl-BE', { day: 'numeric', month: 'numeric', year: 'numeric' }); }
-    catch (e) { return iso.slice(0, 10); }
+    catch (e) { return String(iso).slice(0, 10); }
   }
+  function uurTekst(d) { return d.toLocaleTimeString('nl-BE', { hour: '2-digit', minute: '2-digit' }); }
   function vandaag() { return new Date().toISOString().slice(0, 10); }
+  function toon(e, ja) { if (e) e.hidden = !ja; }
 
-  function toast(tekst) {
+  function toast(tekst, lang) {
     var t = $('#toast');
     t.textContent = tekst;
     t.classList.add('zichtbaar');
     clearTimeout(toast.timer);
-    toast.timer = setTimeout(function () { t.classList.remove('zichtbaar'); }, 3200);
+    toast.timer = setTimeout(function () { t.classList.remove('zichtbaar'); }, lang ? 9000 : 3600);
   }
 
-  // ---------- opslag ----------
-  var opslagWerkt = true;
+  // ---------- gegevens ----------
+  // klassen[k] = [{ naam, id }]; id = Classroom-gebruikers-id (null als je de lijst zelf plakte)
   function legeData() {
-    var d = { versie: 1, klassen: {}, resultaten: [], laatsteBackup: null };
+    var d = {
+      versie: 2, klassen: {}, klassenDatum: '', cursussen: {}, resultaten: [], gewist: [],
+      classroom: {}, gesynct: {}, laatsteBackup: null, laatsteDriveOpslag: null
+    };
     CFG.klassen.forEach(function (k) { d.klassen[k] = []; });
     return d;
   }
-  function geldig(d) {
-    return d && typeof d === 'object' && d.klassen && typeof d.klassen === 'object' && Array.isArray(d.resultaten);
+
+  // leest versie 1 (namen als tekst) en versie 2; null als het geen gegevens van deze tool zijn
+  function normaliseer(o) {
+    if (!o || typeof o !== 'object' || !o.klassen || typeof o.klassen !== 'object' || !Array.isArray(o.resultaten)) return null;
+    var d = legeData();
+    Object.keys(o.klassen).forEach(function (k) {
+      var lijst = Array.isArray(o.klassen[k]) ? o.klassen[k] : [];
+      d.klassen[k] = lijst.map(function (x) {
+        return typeof x === 'string' ? { naam: x, id: null } : { naam: String(x.naam || ''), id: x.id || null };
+      }).filter(function (x) { return x.naam; });
+    });
+    CFG.klassen.forEach(function (k) { if (!Array.isArray(d.klassen[k])) d.klassen[k] = []; });
+    d.resultaten = o.resultaten.filter(function (r) { return r && r.id && r.klas && r.leerling && r.test; });
+    d.gewist = Array.isArray(o.gewist) ? o.gewist : [];
+    d.klassenDatum = o.klassenDatum || '';
+    d.cursussen = o.cursussen && typeof o.cursussen === 'object' ? o.cursussen : {};
+    d.classroom = o.classroom && typeof o.classroom === 'object' ? o.classroom : {};
+    d.gesynct = o.gesynct && typeof o.gesynct === 'object' ? o.gesynct : {};
+    d.laatsteBackup = o.laatsteBackup || null;
+    d.laatsteDriveOpslag = o.laatsteDriveOpslag || null;
+    return d;
   }
+
+  // twee versies samenvoegen (deze browser en het bestand in Drive): niets gaat verloren
+  function samenvoegen(a, b) {
+    var d = legeData();
+    var gewist = {};
+    a.gewist.concat(b.gewist).forEach(function (id) { gewist[id] = true; });
+    d.gewist = Object.keys(gewist);
+    var perId = {};
+    b.resultaten.concat(a.resultaten).forEach(function (r) { if (!gewist[r.id]) perId[r.id] = r; });
+    d.resultaten = Object.keys(perId).map(function (id) { return perId[id]; })
+      .sort(function (x, y) { return x.datum < y.datum ? -1 : 1; });
+    var nieuwst = (a.klassenDatum || '') >= (b.klassenDatum || '') ? a : b;
+    d.klassen = nieuwst.klassen;
+    d.klassenDatum = nieuwst.klassenDatum;
+    d.cursussen = Object.assign({}, b.cursussen, a.cursussen);
+    CFG.klassen.concat(Object.keys(b.classroom), Object.keys(a.classroom)).forEach(function (k) {
+      if (b.classroom[k] || a.classroom[k]) d.classroom[k] = Object.assign({}, b.classroom[k], a.classroom[k]);
+    });
+    d.gesynct = Object.assign({}, b.gesynct);
+    Object.keys(a.gesynct).forEach(function (id) {
+      if (!d.gesynct[id] || d.gesynct[id].datum < a.gesynct[id].datum) d.gesynct[id] = a.gesynct[id];
+    });
+    d.laatsteBackup = [a.laatsteBackup, b.laatsteBackup].filter(Boolean).sort().pop() || null;
+    d.laatsteDriveOpslag = [a.laatsteDriveOpslag, b.laatsteDriveOpslag].filter(Boolean).sort().pop() || null;
+    return d;
+  }
+
+  var opslagWerkt = true;
   function laad() {
     var d = legeData();
     try {
       var s = localStorage.getItem(SLEUTEL);
-      if (s) {
-        var o = JSON.parse(s);
-        if (geldig(o)) {
-          d.klassen = o.klassen;
-          d.resultaten = o.resultaten;
-          d.laatsteBackup = o.laatsteBackup || null;
-        }
-      }
+      if (s) d = normaliseer(JSON.parse(s)) || d;
       localStorage.setItem(SLEUTEL + '_test', '1');
       localStorage.removeItem(SLEUTEL + '_test');
     } catch (e) {
       opslagWerkt = false;
     }
-    CFG.klassen.forEach(function (k) { if (!Array.isArray(d.klassen[k])) d.klassen[k] = []; });
     return d;
   }
-  function bewaar() {
+  function bewaarLokaal() {
     try {
       localStorage.setItem(SLEUTEL, JSON.stringify(data));
       return true;
@@ -101,11 +150,18 @@
       return false;
     }
   }
+  // na elke wijziging: lokaal bewaren en (verbonden) ook in Drive
+  function bewaar() {
+    var ok = bewaarLokaal();
+    drive.vuil = true;
+    planDrive();
+    return ok;
+  }
   function laadVoorkeur() {
     try { return JSON.parse(localStorage.getItem(VOORKEUR)) || {}; } catch (e) { return {}; }
   }
   function bewaarVoorkeur() {
-    try { localStorage.setItem(VOORKEUR, JSON.stringify(ui)); } catch (e) { /* niet erg */ }
+    try { localStorage.setItem(VOORKEUR, JSON.stringify({ klas: ui.klas, test: ui.test, toetsenbord: ui.toetsenbord })); } catch (e) { /* niet erg */ }
   }
 
   var data = laad();
@@ -116,12 +172,14 @@
     toetsenbord: vk.toetsenbord !== false,
     view: 'leerlingen'
   };
+  var drive = { id: null, vuil: false, bezig: false, opnieuw: false, laatst: null, fout: null, probleem: '', timer: null };
+  var google = { bezig: '', gebruiker: '' };
 
-  function toon(e, ja) { e.hidden = !ja; }
   function huidigeTest() {
     for (var i = 0; i < CFG.tests.length; i++) if (CFG.tests[i].id === ui.test) return CFG.tests[i];
     return CFG.tests[0];
   }
+  function klaslijst(klas) { return data.klassen[klas] || []; }
 
   // ---------- punten ----------
   function puntVoor(waarde, drempels) {
@@ -137,14 +195,32 @@
   function totaalMax(test) { return maxVan(test.snelheid) + maxVan(test.nauwkeurigheid) + techniekMax(); }
 
   // ---------- resultaten opzoeken ----------
-  function pogingen(klas, naam, testId) {
+  function hoortBij(r, klas, l) {
+    if (r.klas !== klas) return false;
+    if (l.id && r.leerlingId) return r.leerlingId === l.id;
+    return r.leerling === l.naam;
+  }
+  function pogingen(klas, l, testId) {
     return data.resultaten.filter(function (r) {
-      return r.klas === klas && r.leerling === naam && (!testId || r.test === testId);
+      return hoortBij(r, klas, l) && (!testId || r.test === testId);
     }).sort(function (a, b) { return a.datum < b.datum ? -1 : 1; });
   }
-  function laatste(klas, naam, testId) {
-    var p = pogingen(klas, naam, testId);
+  function laatste(klas, l, testId) {
+    var p = pogingen(klas, l, testId);
     return p.length ? p[p.length - 1] : null;
+  }
+  // resultaten zonder Classroom-id koppelen aan een leerling met dezelfde naam
+  function koppelResultaten(klas) {
+    klaslijst(klas).forEach(function (l) {
+      if (!l.id) return;
+      data.resultaten.forEach(function (r) {
+        if (r.klas === klas && !r.leerlingId && r.leerling === l.naam) r.leerlingId = l.id;
+      });
+    });
+  }
+  function inClassroom(r) {
+    var s = data.gesynct[r.id];
+    return !!s && s.punt === r.punten;
   }
 
   // ---------- views ----------
@@ -162,6 +238,13 @@
     if (naam === 'resultaten') tekenResultaten();
     if (naam === 'gegevens') tekenGegevens();
     window.scrollTo(0, 0);
+  }
+  function herteken() {
+    tekenGoogle();
+    if (ui.view === 'leerlingen') tekenLijst();
+    if (ui.view === 'resultaten') tekenResultaten();
+    if (ui.view === 'gegevens') tekenGegevens();
+    toonBackupHerinnering();
   }
 
   function tekenTabs() {
@@ -199,21 +282,21 @@
     $('#test-uitleg-lijst').textContent = t.titel + ' — ' + t.uitleg + ' Klik op een naam om de test te starten.';
     var box = $('#leerling-lijst');
     box.innerHTML = '';
-    var namen = data.klassen[ui.klas] || [];
-    toon($('#lijst-leeg'), namen.length === 0);
-    namen.forEach(function (naam) {
-      var r = laatste(ui.klas, naam, t.id);
+    var lijst = klaslijst(ui.klas);
+    toon($('#lijst-leeg'), lijst.length === 0);
+    lijst.forEach(function (l) {
+      var r = laatste(ui.klas, l, t.id);
       var b = el('button', 'leerling' + (r ? ' getest' : ''));
       b.type = 'button';
-      b.appendChild(el('span', 'leerling-naam', naam));
+      b.appendChild(el('span', 'leerling-naam', l.naam));
       b.appendChild(el('span', 'leerling-status', r ? puntTekst(r.punten) + ' / 20 · ' + datumTekst(r.datum) : 'nog niet getest'));
-      b.addEventListener('click', function () { startVoor(naam); });
+      b.addEventListener('click', function () { startVoor(l); });
       box.appendChild(b);
     });
   }
 
   // ---------- het toetsenbord op het scherm ----------
-  function tekenToetsenbord(test) {
+  function tekenToetsenbord(t) {
     var box = $('#toetsenbord');
     box.innerHTML = '';
     RIJEN.forEach(function (rij, ri) {
@@ -221,7 +304,7 @@
       rij.forEach(function (c) {
         var k = el('span', 'kb-toets v-' + VINGER[c], c);
         k.setAttribute('data-toets', c);
-        if (test.toetsen.indexOf(c) < 0) k.classList.add('kb-uit');
+        if (t.toetsen.indexOf(c) < 0) k.classList.add('kb-uit');
         if (c === 'f' || c === 'j') k.classList.add('kb-streep');
         r.appendChild(k);
       });
@@ -235,11 +318,11 @@
   }
   function markeerToets(c) {
     $$('.kb-toets.kb-nu').forEach(function (k) { k.classList.remove('kb-nu'); });
-    var k = document.querySelector('.kb-toets[data-toets="' + (c === ' ' ? ' ' : c) + '"]');
-    if (k) k.classList.add('kb-nu');
-    $('#volgende').innerHTML = '';
-    if (c === undefined) return;
     var v = $('#volgende');
+    v.innerHTML = '';
+    if (c === undefined) return;
+    var k = document.querySelector('.kb-toets[data-toets="' + c + '"]');
+    if (k) k.classList.add('kb-nu');
     v.appendChild(document.createTextNode('Volgende toets: '));
     v.appendChild(el('strong', '', c === ' ' ? 'spatie' : c));
     v.appendChild(document.createTextNode(' · ' + VINGERNAAM[VINGER[c]]));
@@ -249,23 +332,18 @@
   var test = {};
   var tekens = [];
 
-  function nieuweToestand(t, naam) {
-    return {
-      cfg: t, naam: naam, klas: ui.klas, tekst: t.tekst.replace(/\s+/g, ' ').trim(),
-      actief: true, gestart: false, klaar: false,
-      pos: 0, juist: 0, fout: 0, foutPerToets: {}, start: 0, timer: null, eindTijd: 0
-    };
-  }
-
-  function startVoor(naam) {
+  function startVoor(l) {
     var t = huidigeTest();
-    test = nieuweToestand(t, naam);
+    test = {
+      cfg: t, leerling: l, klas: ui.klas, tekst: t.tekst.replace(/\s+/g, ' ').trim(),
+      actief: true, gestart: false, klaar: false,
+      pos: 0, juist: 0, fout: 0, foutPerToets: {}, start: 0, timer: null
+    };
     $('#test-titel').textContent = t.titel + ' · ' + ui.klas;
-    $('#test-naam').textContent = naam;
+    $('#test-naam').textContent = l.naam;
     tekenToetsenbord(t);
     bouwTekst(test.tekst);
     zetKlok(t.duur, 0);
-    toon($('#instructie'), true);
     toon($('#waarschuw-caps'), false);
     toon($('#waarschuw-qwerty'), false);
     $('#toon-toetsenbord').checked = ui.toetsenbord;
@@ -335,7 +413,7 @@
   function opnieuw() {
     if (!test.cfg) return;
     clearInterval(test.timer);
-    startVoor(test.naam);
+    startVoor(test.leerling);
   }
 
   function controleerIndeling(e) {
@@ -352,7 +430,6 @@
   function opToets(e) {
     if (ui.view !== 'test' || !test.actief || test.klaar) return;
     if (e.ctrlKey || e.metaKey || e.altKey) return;
-    if (e.key === 'Escape') return;
     if (e.key.length !== 1) return;          // Shift, Backspace, pijltjes … tellen niet
     e.preventDefault();
     var caps = e.getModifierState && e.getModifierState('CapsLock');
@@ -384,7 +461,8 @@
     stopTest();
     var duur = Math.min(test.cfg.duur, (performance.now() - test.start) / 1000);
     var aanslagen = test.juist + test.fout;
-    var res = {
+    zetKlok(0, 1);
+    toonBeoordeling({
       wpm: duur > 0 ? (test.juist / 5) / (duur / 60) : 0,
       nauwkeurigheid: aanslagen ? test.juist / aanslagen * 100 : 0,
       juist: test.juist,
@@ -392,9 +470,7 @@
       duur: Math.round(duur * 10) / 10,
       tekstAf: test.pos >= test.tekst.length,
       foutPerToets: test.foutPerToets
-    };
-    zetKlok(0, 1);
-    toonBeoordeling(res);
+    });
   }
 
   // ---------- beoordeling ----------
@@ -409,7 +485,7 @@
       antwoorden: {}
     };
     $('#beoordeling-titel').textContent = t.titel + ' · ' + test.klas;
-    $('#beoordeling-naam').textContent = test.naam;
+    $('#beoordeling-naam').textContent = test.leerling.naam;
 
     var stats = $('#stats');
     stats.innerHTML = '';
@@ -463,19 +539,16 @@
   }
 
   function berekenPunt() {
-    var t = test.cfg;
     var techniek = 0, beantwoord = 0;
     CFG.vragen.forEach(function (v) {
       var a = beoordeling.antwoorden[v.id];
       if (a) { techniek += a.punten; beantwoord++; }
     });
     var som = beoordeling.snelheid + beoordeling.nauwkeurigheid + techniek;
-    var max = totaalMax(t);
+    var max = totaalMax(test.cfg);
     return {
       techniek: techniek,
-      som: som,
-      max: max,
-      punt: max ? Math.round(som / max * 20 * 10) / 10 : 0,
+      punt: max ? Math.round(som / max * MAX_PUNTEN * 10) / 10 : 0,
       volledig: beantwoord === CFG.vragen.length
     };
   }
@@ -505,7 +578,8 @@
     data.resultaten.push({
       id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
       klas: test.klas,
-      leerling: test.naam,
+      leerling: test.leerling.naam,
+      leerlingId: test.leerling.id || null,
       test: test.cfg.id,
       datum: new Date().toISOString(),
       wpm: Math.round(r.wpm * 10) / 10,
@@ -521,34 +595,49 @@
       punten: p.punt,
       opmerking: $('#opmerking').value.trim()
     });
-    if (bewaar()) toast('Bewaard: ' + test.naam + ' — ' + puntTekst(p.punt) + ' / 20');
+    if (bewaar()) toast('Bewaard: ' + test.leerling.naam + ' — ' + puntTekst(p.punt) + ' / 20');
     else toast('Niet bewaard: deze browser blokkeert de opslag.');
     test = {};
     zetView('leerlingen');
-    toonBackupHerinnering();
   }
 
   // ---------- resultaten ----------
+  function classroomTitel(t) { return 'Dactylo — ' + t.titel; }
+
+  function teSturen(klas, t) {
+    var lijst = [], zonderId = [];
+    klaslijst(klas).forEach(function (l) {
+      var r = laatste(klas, l, t.id);
+      if (!r) return;
+      if (!l.id) { zonderId.push(l.naam); return; }
+      if (!inClassroom(r)) lijst.push({ leerling: l, r: r });
+    });
+    return { lijst: lijst, zonderId: zonderId };
+  }
+
   function tekenResultaten() {
     var t = huidigeTest();
+    var metGoogle = G.ingesteld();
     var tab = $('#tabel');
     tab.innerHTML = '';
     var kop = el('thead');
     var kr = el('tr');
-    ['Leerling', 'Datum', 'Woorden/min', 'Nauwkeurig', 'Techniek', 'Punt /20', 'Pogingen'].forEach(function (h) { kr.appendChild(el('th', '', h)); });
+    var koppen = ['Leerling', 'Datum', 'Woorden/min', 'Nauwkeurig', 'Techniek', 'Punt /20', 'Pogingen'];
+    if (metGoogle) koppen.push('Classroom');
+    koppen.forEach(function (h) { kr.appendChild(el('th', '', h)); });
     kop.appendChild(kr);
     tab.appendChild(kop);
     var body = el('tbody');
-    var namen = data.klassen[ui.klas] || [];
+    var lijst = klaslijst(ui.klas);
     var som = 0, n = 0;
-    namen.forEach(function (naam) {
-      var alle = pogingen(ui.klas, naam, t.id);
+    lijst.forEach(function (l) {
+      var alle = pogingen(ui.klas, l, t.id);
       var r = alle[alle.length - 1];
       var tr = el('tr', r ? '' : 'niet-getest');
       var td = el('td');
-      var b = el('button', 'link', naam);
+      var b = el('button', 'link', l.naam);
       b.type = 'button';
-      b.addEventListener('click', function () { toonDetail(naam); });
+      b.addEventListener('click', function () { toonDetail(l); });
       td.appendChild(b);
       tr.appendChild(td);
       if (r) {
@@ -559,41 +648,68 @@
         tr.appendChild(el('td', 'getal', r.puntenTechniek + '/' + techniekMax()));
         tr.appendChild(el('td', 'getal sterk', puntTekst(r.punten)));
         tr.appendChild(el('td', 'getal', String(alle.length)));
+        if (metGoogle) {
+          tr.appendChild(!l.id ? el('td', 'hint', 'niet uit Classroom')
+            : inClassroom(r) ? el('td', 'cr-ok', '✓ staat erin') : el('td', 'cr-nog', 'nog niet'));
+        }
       } else {
         var leeg = el('td', 'hint', 'nog niet getest');
-        leeg.colSpan = 6;
+        leeg.colSpan = metGoogle ? 7 : 6;
         tr.appendChild(leeg);
       }
       body.appendChild(tr);
     });
     tab.appendChild(body);
-    if (namen.length) {
+    if (lijst.length) {
       var voet = el('tfoot');
       var vr = el('tr');
-      vr.appendChild(el('td', '', n + ' van ' + namen.length + ' getest'));
+      vr.appendChild(el('td', '', n + ' van ' + lijst.length + ' getest'));
       var gem = el('td', 'getal', n ? 'Gemiddelde: ' + komma(som / n, 1) + ' / 20' : '');
-      gem.colSpan = 6;
+      gem.colSpan = metGoogle ? 7 : 6;
       vr.appendChild(gem);
       voet.appendChild(vr);
       tab.appendChild(voet);
     } else {
       var leegRij = el('tr');
       var c = el('td', 'hint', 'Nog geen klaslijst voor ' + ui.klas + '.');
-      c.colSpan = 7;
+      c.colSpan = koppen.length;
       leegRij.appendChild(c);
       body.appendChild(leegRij);
     }
+    if (metGoogle) tekenClassroomInfo(t);
   }
 
-  function toonDetail(naam) {
+  function tekenClassroomInfo(t) {
+    $('#classroom-titel').textContent = classroomTitel(t);
+    var info = $('#classroom-info');
+    if (G.bezigMet) return;
+    info.innerHTML = '';
+    var s = teSturen(ui.klas, t);
+    var tekst = s.lijst.length ? s.lijst.length + (s.lijst.length === 1 ? ' punt moet nog naar Classroom.' : ' punten moeten nog naar Classroom.')
+      : 'Alle punten van ' + ui.klas + ' staan in Classroom.';
+    if (!pogingenVanTest(ui.klas, t).length) tekst = 'Nog geen resultaten in ' + ui.klas + '.';
+    if (s.zonderId.length) tekst += ' ' + s.zonderId.length + ' leerling(en) komen niet uit Classroom; vernieuw de klaslijsten.';
+    info.appendChild(document.createTextNode(tekst + ' '));
+    var cr = data.classroom[ui.klas] && data.classroom[ui.klas][t.id];
+    if (cr && cr.link) {
+      var a = el('a', '', 'Open de opdracht in Classroom');
+      a.href = cr.link;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      info.appendChild(a);
+    }
+  }
+  function pogingenVanTest(klas, t) {
+    return data.resultaten.filter(function (r) { return r.klas === klas && r.test === t.id; });
+  }
+
+  function toonDetail(l) {
     var d = $('#detail');
-    $('#detail-titel').textContent = naam + ' · ' + ui.klas;
+    $('#detail-titel').textContent = l.naam + ' · ' + ui.klas;
     var inh = $('#detail-inhoud');
     inh.innerHTML = '';
-    var alle = pogingen(ui.klas, naam, null);
-    if (!alle.length) {
-      inh.appendChild(el('p', 'hint', 'Nog geen pogingen.'));
-    }
+    var alle = pogingen(ui.klas, l, null);
+    if (!alle.length) inh.appendChild(el('p', 'hint', 'Nog geen pogingen.'));
     CFG.tests.forEach(function (t) {
       var p = alle.filter(function (r) { return r.test === t.id; });
       if (!p.length) return;
@@ -613,10 +729,13 @@
         var w = el('button', 'btn btn-klein', 'Wissen');
         w.type = 'button';
         w.addEventListener('click', function () {
-          if (!confirm('Deze poging van ' + naam + ' (' + datumTekst(r.datum) + ', ' + puntTekst(r.punten) + '/20) wissen?')) return;
+          var vraag = 'Deze poging van ' + l.naam + ' (' + datumTekst(r.datum) + ', ' + puntTekst(r.punten) + '/20) wissen?';
+          if (data.gesynct[r.id]) vraag += '\n\nDit punt staat al in Classroom. Daar verandert niets: pas het daar zo nodig zelf aan.';
+          if (!confirm(vraag)) return;
           data.resultaten = data.resultaten.filter(function (x) { return x.id !== r.id; });
+          data.gewist.push(r.id);
           bewaar();
-          toonDetail(naam);
+          toonDetail(l);
           tekenResultaten();
         });
         td.appendChild(w);
@@ -632,15 +751,13 @@
       });
       inh.appendChild(tab);
     });
-    if (typeof d.showModal === 'function') d.showModal(); else d.setAttribute('open', '');
+    if (typeof d.showModal === 'function') { if (!d.open) d.showModal(); } else d.setAttribute('open', '');
   }
 
   // ---------- export ----------
   function puntenLijst() {
     var t = huidigeTest();
-    return (data.klassen[ui.klas] || []).map(function (naam) {
-      return { naam: naam, r: laatste(ui.klas, naam, t.id) };
-    });
+    return klaslijst(ui.klas).map(function (l) { return { naam: l.naam, r: laatste(ui.klas, l, t.id) }; });
   }
 
   function kopieer(tekst, gelukt) {
@@ -675,7 +792,7 @@
     ta.rows = 12;
     ta.value = tekst;
     inh.appendChild(ta);
-    if (typeof d.showModal === 'function') d.showModal(); else d.setAttribute('open', '');
+    if (typeof d.showModal === 'function') { if (!d.open) d.showModal(); } else d.setAttribute('open', '');
     ta.focus();
     ta.select();
   }
@@ -713,49 +830,275 @@
     toast('Het bestand staat in je map Downloads.');
   }
 
+  // ---------- Google: verbinden, klaslijsten, Drive ----------
+  function tekenGoogle() {
+    var aan = G.ingesteld();
+    document.body.classList.toggle('google-aan', aan);
+    toon($('#google-blok'), aan);
+    if (!aan) return;
+    var v = G.verbonden();
+    var knop = $('#knop-google');
+    toon(knop, (!v || !!drive.probleem) && !google.bezig);
+    knop.textContent = v ? 'Opnieuw verbinden' : 'Verbind met Google';
+    knop.classList.toggle('btn-primair', !v);
+    var st = $('#google-status');
+    var tekst, fout = false;
+    if (google.bezig) tekst = google.bezig;
+    else if (!v) { tekst = drive.vuil && drive.id ? 'Verbinding verlopen: wijzigingen staan nog niet in Drive' : ''; fout = !!(drive.vuil && drive.id); }
+    else if (drive.probleem) { tekst = drive.probleem; fout = true; }
+    else if (drive.fout) { tekst = 'Opslaan in Drive mislukt: ' + drive.fout; fout = true; }
+    else if (drive.bezig || (drive.vuil && drive.id)) tekst = 'Opslaan in Drive…';
+    else if (drive.laatst) tekst = '✓ Verbonden · opgeslagen in Drive om ' + uurTekst(drive.laatst);
+    else tekst = '✓ Verbonden';
+    st.textContent = tekst;
+    st.classList.toggle('fout', fout);
+    if (google.gebruiker && v) st.title = 'Verbonden als ' + google.gebruiker; else st.removeAttribute('title');
+  }
+
+  function zetBezig(tekst) { google.bezig = tekst; tekenGoogle(); }
+
+  // vanuit een klik (anders blokkeert de browser het aanmeldvenster)
+  function verbindKlik(daarna) {
+    zetBezig('Verbinden…');
+    G.verbind()
+      .then(function () {
+        return G.gebruiker().then(function (u) { google.gebruiker = u.emailAddress || u.displayName || ''; }, function () {});
+      })
+      .then(function () { zetBezig('Klaslijsten ophalen uit Classroom…'); return vernieuwKlassen(); })
+      .then(function () { zetBezig('Gegevens laden uit Drive…'); return laadUitDrive(); })
+      .then(function () {
+        zetBezig('');
+        herteken();
+        toast('Verbonden met Google. De klaslijsten komen uit Classroom en alles wordt bewaard in je Drive.');
+        if (daarna) daarna();
+      })
+      .catch(function (e) {
+        zetBezig('');
+        herteken();
+        toast(e.message, true);
+      });
+  }
+
+  function vernieuwKlassen() {
+    return G.cursussen().then(function (lijst) {
+      var ontbreekt = [];
+      return CFG.klassen.reduce(function (p, k) {
+        return p.then(function () {
+          var c = lijst.filter(function (x) { return x.name === k || x.name.indexOf(k + ' ') === 0; })[0];
+          if (!c) { ontbreekt.push(k); return; }
+          data.cursussen[k] = { id: c.id, naam: c.name };
+          return G.leerlingen(c.id).then(function (ll) {
+            data.klassen[k] = ll.map(function (l) { return { naam: l.naam, id: l.id }; });
+            koppelResultaten(k);
+          });
+        });
+      }, Promise.resolve()).then(function () {
+        data.klassenDatum = new Date().toISOString();
+        bewaar();
+        if (ontbreekt.length) toast('Geen actieve Classroom-klas gevonden voor ' + ontbreekt.join(', ') + '.', true);
+      });
+    });
+  }
+
+  function laadUitDrive() {
+    return G.zoekBestand().then(function (f) {
+      if (!f) {
+        drive.probleem = '';
+        var inhoud = JSON.stringify(data);
+        drive.vuil = false;
+        return G.maakBestand(inhoud).then(function (r) { drive.id = r.id; naDriveOpslag(); },
+          function (e) { drive.vuil = true; throw e; });
+      }
+      return G.leesBestand(f.id).then(function (inhoud) {
+        var o = null;
+        try { o = normaliseer(typeof inhoud === 'string' ? JSON.parse(inhoud) : inhoud); } catch (e) { o = null; }
+        if (!o) {
+          drive.id = null;   // niets overschrijven
+          drive.probleem = 'Verbonden, maar het bestand in je Drive is onleesbaar: er wordt niets in Drive opgeslagen.';
+          throw new Error('Het gegevensbestand in je Drive is onleesbaar. Er is niets overschreven; je werkt nu alleen in deze browser. ' +
+            'Zet dat bestand in de prullenbak van Drive en verbind opnieuw: dan maakt de tool een nieuw bestand.');
+        }
+        drive.probleem = '';
+        drive.id = f.id;
+        data = samenvoegen(data, o);
+        CFG.klassen.forEach(koppelResultaten);
+        bewaarLokaal();
+        drive.vuil = false;
+        return G.schrijfBestand(drive.id, JSON.stringify(data)).then(naDriveOpslag);
+      });
+    });
+  }
+
+  function planDrive() {
+    if (!G.verbonden() || !drive.id) { tekenGoogle(); return; }
+    clearTimeout(drive.timer);
+    drive.timer = setTimeout(slaOpInDrive, 800);
+    tekenGoogle();
+  }
+
+  function slaOpInDrive() {
+    if (!G.verbonden() || !drive.id) { tekenGoogle(); return; }
+    if (drive.bezig) { drive.opnieuw = true; return; }
+    drive.bezig = true;
+    drive.fout = null;
+    drive.vuil = false;            // wijzigingen tijdens het opslaan maken het opnieuw "vuil"
+    tekenGoogle();
+    G.schrijfBestand(drive.id, JSON.stringify(data))
+      .then(naDriveOpslag, function (e) { drive.vuil = true; drive.fout = e.message; })
+      .then(function () {
+        drive.bezig = false;
+        if (drive.opnieuw || drive.vuil && !drive.fout) { drive.opnieuw = false; planDrive(); }
+        tekenGoogle();
+        toonBackupHerinnering();
+      });
+  }
+
+  function naDriveOpslag() {
+    drive.fout = null;
+    drive.laatst = new Date();
+    data.laatsteDriveOpslag = drive.laatst.toISOString();
+    bewaarLokaal();
+  }
+
+  // ---------- Google: punten naar Classroom ----------
+  var GESTOPT = {};
+
+  function puntenNaarClassroom() {
+    if (!G.verbonden()) { verbindKlik(puntenNaarClassroom); return; }
+    var t = huidigeTest();
+    var klas = ui.klas;
+    var cursus = data.cursussen[klas];
+    if (!cursus) { toast('Er is geen Classroom-klas gekoppeld aan ' + klas + '. Klik bij Klaslijsten op Vernieuw.', true); return; }
+    var s = teSturen(klas, t);
+    if (!s.lijst.length) {
+      toast(s.zonderId.length ? 'Deze leerlingen komen niet uit Classroom: ' + s.zonderId.join(', ') + '. Vernieuw de klaslijsten.'
+        : 'Alle punten van ' + klas + ' staan al in Classroom.', true);
+      return;
+    }
+    var titel = classroomTitel(t);
+    var bekend = data.classroom[klas] && data.classroom[klas][t.id];
+    var knop = $('#knop-classroom');
+    var info = $('#classroom-info');
+    var opdracht = null;
+    knop.disabled = true;
+    G.bezigMet = true;
+    info.textContent = 'Opdracht zoeken in Classroom…';
+
+    (bekend ? G.opdracht(cursus.id, bekend.opdrachtId) : Promise.resolve(null))
+      .then(function (o) { return o || G.zoekOpdracht(cursus.id, titel); })
+      .then(function (o) {
+        var n = s.lijst.length;
+        var vraag = (o
+          ? 'De punten gaan naar de opdracht "' + titel + '" in ' + cursus.naam + '.'
+          : 'In ' + cursus.naam + ' komt een nieuwe opdracht "' + titel + '" (op 20, zonder deadline). De leerlingen zien die opdracht in Classroom.') +
+          '\n\nDe punten van ' + n + (n === 1 ? ' leerling worden' : ' leerlingen worden') + ' ingevuld en teruggegeven: ze zien hun punt in Classroom.' +
+          (s.zonderId.length ? '\n\nNiet mee (niet uit Classroom): ' + s.zonderId.join(', ') + '.' : '') + '\n\nDoorgaan?';
+        if (!confirm(vraag)) throw GESTOPT;
+        if (o) return o;
+        info.textContent = 'Opdracht maken in Classroom…';
+        return G.maakOpdracht(cursus.id, titel,
+          'Dactylotest bij je leraar: snelheid, nauwkeurigheid en techniek (de juiste vingerzetting). Je hoeft hier niets in te leveren. Je punt verschijnt hier na de test.',
+          MAX_PUNTEN);
+      })
+      .then(function (o) {
+        opdracht = o;
+        data.classroom[klas] = data.classroom[klas] || {};
+        data.classroom[klas][t.id] = { opdrachtId: o.id, cursusId: cursus.id, titel: titel, link: o.alternateLink || '' };
+        bewaar();
+        return G.inzendingen(cursus.id, o.id);
+      })
+      .then(function (inz) {
+        var perLeerling = {};
+        inz.forEach(function (x) { perLeerling[x.userId] = x; });
+        var klaar = 0, mislukt = [];
+        return s.lijst.reduce(function (p, x, i) {
+          return p.then(function () {
+            info.textContent = 'Punten invullen… ' + (i + 1) + ' van ' + s.lijst.length;
+            var sub = perLeerling[x.leerling.id];
+            if (!sub) { mislukt.push(x.leerling.naam + ' (zit niet in deze opdracht)'); return; }
+            return G.zetPunt(cursus.id, opdracht.id, sub.id, x.r.punten).then(function () {
+              klaar++;
+              data.gesynct[x.r.id] = { punt: x.r.punten, datum: new Date().toISOString() };
+            }, function (e) {
+              if (e.code === 'verlopen') throw e;
+              mislukt.push(x.leerling.naam + ' (' + e.message + ')');
+            });
+          });
+        }, Promise.resolve()).then(function () { return { klaar: klaar, mislukt: mislukt }; });
+      })
+      .then(function (res) {
+        bewaar();
+        G.bezigMet = false;
+        tekenResultaten();
+        var m = res.klaar + (res.klaar === 1 ? ' punt staat' : ' punten staan') + ' in Classroom. In Skore: + › Resultaten importeren › Google Classroom › "' + titel + '".';
+        if (res.mislukt.length) m += ' Niet gelukt: ' + res.mislukt.join('; ') + '.';
+        toast(m, true);
+      })
+      .catch(function (e) {
+        bewaar();
+        G.bezigMet = false;
+        tekenResultaten();
+        if (e !== GESTOPT) toast(e.message, true);
+      })
+      .then(function () { knop.disabled = false; });
+  }
+
   // ---------- klaslijsten en back-up ----------
   function tekenGegevens() {
     var box = $('#klaslijsten');
     box.innerHTML = '';
     CFG.klassen.forEach(function (k) {
       var lab = el('label', 'klaslijst');
-      lab.appendChild(el('span', 'klaslijst-titel', k + ' (' + (data.klassen[k] || []).length + ' leerlingen)'));
+      lab.appendChild(el('span', 'klaslijst-titel', k + ' (' + klaslijst(k).length + ' leerlingen)'));
       var ta = document.createElement('textarea');
       ta.rows = 12;
       ta.setAttribute('data-klas', k);
       ta.placeholder = 'Familienaam Voornaam\nFamilienaam Voornaam\n…';
-      ta.value = (data.klassen[k] || []).join('\n');
+      ta.value = klaslijst(k).map(function (l) { return l.naam; }).join('\n');
       lab.appendChild(ta);
       box.appendChild(lab);
     });
-    $('#backup-info').textContent = data.laatsteBackup
-      ? 'Laatste back-up: ' + datumTekst(data.laatsteBackup) + '. ' + data.resultaten.length + ' pogingen bewaard.'
-      : 'Nog geen back-up gemaakt. ' + data.resultaten.length + ' pogingen bewaard.';
+    $('#handmatig').open = !G.ingesteld();
+    var ck = $('#classroom-klassen');
+    ck.innerHTML = '';
+    CFG.klassen.forEach(function (k) {
+      var c = data.cursussen[k];
+      var heeftIds = klaslijst(k).some(function (l) { return l.id; });
+      ck.appendChild(el('p', '', k + ': ' + (c && heeftIds ? c.naam + ' in Classroom · ' + klaslijst(k).length + ' leerlingen' : 'nog niet uit Classroom geladen')));
+    });
+    if (data.klassenDatum) ck.appendChild(el('p', '', 'Laatst vernieuwd: ' + datumTekst(data.klassenDatum) + '.'));
+    $('#drive-naam').textContent = G.bestandsnaam;
+    $('#backup-info').textContent = (data.laatsteBackup ? 'Laatste back-up: ' + datumTekst(data.laatsteBackup) + '. ' : 'Nog geen back-up gemaakt. ') +
+      data.resultaten.length + ' pogingen bewaard.';
   }
 
   function bewaarLijsten() {
-    var dubbel = [];
-    var weg = [];
+    var dubbel = [], weg = [];
     $$('#klaslijsten textarea').forEach(function (ta) {
       var k = ta.getAttribute('data-klas');
-      var namen = ta.value.split(/\r?\n/).map(function (s) { return s.replace(/\s+/g, ' ').trim(); })
-        .filter(function (s) { return s.length; });
+      var oud = klaslijst(k);
+      var idVan = {};
+      oud.forEach(function (l) { idVan[l.naam] = l.id; });
       var gezien = {};
-      namen = namen.filter(function (s) {
-        if (gezien[s]) { dubbel.push(s); return false; }
-        gezien[s] = true; return true;
+      var nieuw = ta.value.split(/\r?\n/).map(function (s) { return s.replace(/\s+/g, ' ').trim(); })
+        .filter(function (s) {
+          if (!s.length) return false;
+          if (gezien[s]) { dubbel.push(s); return false; }
+          gezien[s] = true; return true;
+        })
+        .map(function (s) { return { naam: s, id: idVan[s] || null }; });
+      oud.forEach(function (l) {
+        if (!gezien[l.naam] && pogingen(k, l, null).length) weg.push(l.naam);
       });
-      (data.klassen[k] || []).forEach(function (oud) {
-        if (namen.indexOf(oud) < 0 && pogingen(k, oud, null).length) weg.push(oud);
-      });
-      data.klassen[k] = namen;
+      data.klassen[k] = nieuw;
     });
+    data.klassenDatum = new Date().toISOString();
     bewaar();
     tekenGegevens();
     var m = 'Klaslijsten bewaard.';
     if (dubbel.length) m += ' Dubbele naam weggelaten: ' + dubbel.join(', ') + '.';
     if (weg.length) m += ' Let op: ' + weg.join(', ') + ' staat niet meer in de lijst; de resultaten blijven bewaard.';
-    toast(m);
+    toast(m, dubbel.length || weg.length);
   }
 
   function backup() {
@@ -770,19 +1113,17 @@
   function zetBackupTerug(bestand) {
     var lezer = new FileReader();
     lezer.onload = function () {
-      var d;
-      try { d = JSON.parse(lezer.result); } catch (e) { d = null; }
-      if (!geldig(d)) { toast('Dit is geen back-up van deze tool.'); return; }
+      var d = null;
+      try { d = normaliseer(JSON.parse(lezer.result)); } catch (e) { d = null; }
+      if (!d) { toast('Dit is geen back-up van deze tool.'); return; }
       var n = d.resultaten.length;
-      if (!confirm('Back-up terugzetten? Daarin staan ' + n + ' pogingen. Wat nu in deze browser staat, wordt vervangen.')) return;
-      data = legeData();
-      data.klassen = d.klassen;
-      CFG.klassen.forEach(function (k) { if (!Array.isArray(data.klassen[k])) data.klassen[k] = []; });
-      data.resultaten = d.resultaten;
-      data.laatsteBackup = d.laatsteBackup || null;
+      var vraag = 'Back-up terugzetten? Daarin staan ' + n + ' pogingen.\n\n' +
+        (G.verbonden() && drive.id ? 'Ze worden samengevoegd met wat er nu is (er gaat niets verloren).' : 'Wat nu in deze browser staat, wordt vervangen.');
+      if (!confirm(vraag)) return;
+      data = G.verbonden() && drive.id ? samenvoegen(data, d) : d;
+      CFG.klassen.forEach(koppelResultaten);
       bewaar();
-      tekenGegevens();
-      toonBackupHerinnering();
+      herteken();
       toast('Back-up teruggezet: ' + n + ' pogingen.');
     };
     lezer.readAsText(bestand);
@@ -790,15 +1131,17 @@
 
   function toonBackupHerinnering() {
     var b = $('#melding-backup');
-    // niet tijdens een test: dan leidt de melding alleen af
+    // niet tijdens een test (leidt af) en niet als alles al in Drive staat
     if (!data.resultaten.length || ui.view === 'test' || ui.view === 'beoordeling') { toon(b, false); return; }
     var nieuwste = data.resultaten.reduce(function (m, r) { return r.datum > m ? r.datum : m; }, '');
-    var oud = !data.laatsteBackup || data.laatsteBackup < nieuwste &&
-      (Date.now() - new Date(data.laatsteBackup).getTime()) / 86400000 >= BACKUP_NA_DAGEN;
+    if (data.laatsteDriveOpslag && data.laatsteDriveOpslag >= nieuwste && !drive.vuil) { toon(b, false); return; }
     var nooit = !data.laatsteBackup;
+    var oud = !nooit && data.laatsteBackup < nieuwste &&
+      (Date.now() - new Date(data.laatsteBackup).getTime()) / 86400000 >= BACKUP_NA_DAGEN;
     toon(b, nooit || oud);
     $('#melding-backup-tekst').textContent = nooit
-      ? 'Er staan resultaten in deze browser, maar nog geen back-up.'
+      ? (G.ingesteld() ? 'Er staan resultaten in deze browser die nog niet in je Drive staan. Verbind met Google of maak een back-up.'
+        : 'Er staan resultaten in deze browser, maar nog geen back-up.')
       : 'Je laatste back-up is ouder dan ' + BACKUP_NA_DAGEN + ' dagen en er zijn nieuwe resultaten.';
   }
 
@@ -827,6 +1170,15 @@
       case 'bewaar-lijsten': bewaarLijsten(); break;
       case 'backup': backup(); break;
       case 'sluit-detail': $('#detail').close(); break;
+      case 'verbind': verbindKlik(); break;
+      case 'classroom': puntenNaarClassroom(); break;
+      case 'vernieuw-klassen':
+        if (!G.verbonden()) { verbindKlik(); break; }
+        zetBezig('Klaslijsten ophalen uit Classroom…');
+        vernieuwKlassen().then(function () { toast('Klaslijsten vernieuwd uit Classroom.'); },
+          function (e) { toast(e.message, true); })
+          .then(function () { zetBezig(''); herteken(); });
+        break;
     }
   });
   document.addEventListener('keydown', opToets);
@@ -846,13 +1198,19 @@
     this.value = '';
   });
   window.addEventListener('beforeunload', function (e) {
-    if (ui.view === 'beoordeling' || (ui.view === 'test' && test.gestart && !test.klaar)) { e.preventDefault(); e.returnValue = ''; }
+    var bezigeTest = ui.view === 'beoordeling' || (ui.view === 'test' && test.gestart && !test.klaar);
+    var nietInDrive = G.verbonden() && drive.id && (drive.vuil || drive.bezig);
+    if (bezigeTest || nietInDrive) { e.preventDefault(); e.returnValue = ''; }
   });
+  setInterval(tekenGoogle, 30000);   // laat zien wanneer de verbinding verloopt
 
   // ---------- start ----------
   toon($('#melding-opslag'), !opslagWerkt);
   tekenTestKeuze();
   tekenTabs();
+  tekenGoogle();
   zetView('leerlingen');
-  toonBackupHerinnering();
+
+  // voor het testen in de browser
+  window.Dactylo = { herteken: herteken, gegevens: function () { return data; } };
 })();

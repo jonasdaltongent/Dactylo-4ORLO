@@ -15,7 +15,11 @@
    Telt het maximum niet op tot 20, dan rekent de tool het om naar 20.
    ========================================================================== */
 window.DACTYLO = {
-  klassen: ['4ORLOa', '4ORLOb'],
+  klassen: ['4ORLOa', '4ORLOb'],   // de Classroom-klassen heten zo, met eventueel iets erachter ("4ORLOa 2027")
+
+  // OAuth-client van het type "Webapplicatie" (Cloud-project Dalton Classroom). Een client-ID is
+  // niet geheim. Leeg = zonder Google: dan plak je de klaslijsten zelf en blijft alles in de browser.
+  googleClientId: '',
 
   tests: [
     {
