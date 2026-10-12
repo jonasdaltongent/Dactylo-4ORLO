@@ -5,7 +5,11 @@ De leerling doet de test op jouw computer. Daarna vul je samen de vragen over de
 tool berekent automatisch een **punt op 20**. Alle resultaten blijven bewaard, zodat je de
 vooruitgang per leerling kunt volgen.
 
-**Test 1: de middelste rij** van een AZERTY-toetsenbord (`q s d f g h j k l m` en de spatiebalk).
+Er zijn twee tests, elk met een eigen punt:
+
+- **Test 1: de middelste rij** van een AZERTY-toetsenbord (`q s d f g h j k l m` en de spatiebalk).
+- **Test 2: de bovenste rij** (`a z e r t y u i o p` en de spatiebalk). De vingers blijven bij de
+  middelste rij en gaan na elke toets terug.
 
 ---
 
@@ -13,7 +17,8 @@ vooruitgang per leerling kunt volgen.
 
 De tool staat op **[jonasdaltongent.github.io/Dactylo-4ORLO](https://jonasdaltongent.github.io/Dactylo-4ORLO/)**.
 Zet dat adres als bladwijzer op de computer in je lokaal. De pagina zelf bevat geen namen of
-punten. Een nieuwe test die erbij komt, verschijnt daar vanzelf.
+punten. Kies bovenaan bij **Test** welke test je afneemt: de resultaten, de tabel en de opdracht in
+Classroom blijven per test apart. Een nieuwe test die erbij komt, verschijnt daar vanzelf.
 
 ## 2. Bij het begin van elk Dactylo-uur: Verbind met Google
 
@@ -36,13 +41,15 @@ Classroom, klik dan bij *Klaslijsten en back-up* op **Vernieuw de klaslijsten ui
 ## 3. Een leerling testen
 
 1. Kies bovenaan de test en de klas, en klik op de naam van de leerling.
-2. De leerling legt de wijsvingers op F en J en kijkt naar het scherm. **De tijd (60 seconden)
-   start bij de eerste toets.**
+2. De leerling legt de wijsvingers op F en J en kijkt naar het scherm. Bij test 2 reiken de vingers
+   naar de bovenste rij en gaan ze na elke toets terug naar de middelste rij. **De tijd (60
+   seconden) start bij de eerste toets.**
 3. Een verkeerde toets wordt rood en telt als fout. De leerling typt dan gewoon de juiste letter.
    Hoofdletters tellen niet. Staat Caps Lock aan, of typt het toetsenbord in QWERTY, dan meldt de
    tool het.
 4. Het toetsenbord op het scherm toont de volgende toets in de kleur van de vinger die erbij hoort.
-   Je kunt het verbergen met **Toetsenbord tonen**.
+   Toetsen die niet in de test zitten, zijn vaag; F en J blijven zichtbaar met hun streepje. Je kunt
+   het toetsenbord verbergen met **Toetsenbord tonen**.
 5. Na 60 seconden (of als de tekst af is) zie je de snelheid, de nauwkeurigheid en de toetsen met de
    meeste fouten. **Vul samen de zes vragen in.** Daarna verschijnt het punt, en klik je op
    **Bewaar het punt**.
@@ -57,35 +64,39 @@ Classroom, klik dan bij *Klaslijsten en back-up* op **Vernieuw de klaslijsten ui
 | Nauwkeurigheid | 4 | juiste aanslagen: **≥ 95 % → 4** · ≥ 90 % → 3 · ≥ 85 % → 2 · ≥ 80 % → 1 |
 | Techniek | 12 | de zes vragen, samen ingevuld |
 
-De zes vragen over de techniek:
+De zes vragen over de techniek zijn voor beide tests dezelfde, behalve vraag 3 en 4: die noemen de
+toetsen en hebben bij test 2 een eigen tekst.
 
 | Vraag | Punten |
 |---|---|
 | Keek je naar je vingers of naar het toetsenbord? | Nooit 3 · Soms 2 · Vaak 1 · Bijna altijd 0 |
 | Gebruikte je voor elke toets de juiste vinger? | Altijd 3 · Meestal 2 · Soms 1 · Zelden 0 |
-| Typte je met twee handen: q s d f g links, h j k l m rechts? | Ja 2 · Deels 1 · Nee 0 |
-| Lagen je wijsvingers op F en J, en gingen je vingers telkens terug naar de middelste rij? | Ja 2 · Deels 1 · Nee 0 |
+| Typte je met twee handen: q s d f g links, h j k l m rechts? *(test 2: a z e r t links, y u i o p rechts)* | Ja 2 · Deels 1 · Nee 0 |
+| Lagen je wijsvingers op F en J, en gingen je vingers telkens terug naar de middelste rij? *(test 2: … en kwamen je vingers na elke toets van de bovenste rij terug naar de middelste rij?)* | Ja 2 · Deels 1 · Nee 0 |
 | Drukte je de spatiebalk in met je duim? | Ja 1 · Nee 0 |
 | Zat je rechtop, met je polsen los van de tafel? | Ja 1 · Nee 0 |
 
 De techniek weegt het zwaarst (12 van de 20), omdat de vingerzetting het doel is. De snelheid is
-bewust laag gehouden: 8 woorden per minuut is 40 tekens per minuut.
+bewust laag gehouden: 8 woorden per minuut is 40 tekens per minuut. Test 2 heeft dezelfde punten en
+dezelfde drempels als test 1.
 
 Alles staat in `js/testen.js`: de drempels, de vragen, de tijd en de tekst. Pas het daar aan.
 
 ## 5. Naar Smartschool, via Classroom
 
 1. Klik op **Resultaten**, kies de klas en klik op **Zet de punten in Classroom**.
-   - De eerste keer maakt de tool in die klas de opdracht **Dactylo — Test 1 · De middelste rij**
-     (op 20, zonder deadline). De leerlingen zien die opdracht, met de uitleg dat ze niets moeten
-     inleveren.
+   - Elke test heeft een eigen opdracht per klas, met de titel van de test: **Dactylo — Test 1 · De
+     middelste rij** en **Dactylo — Test 2 · De bovenste rij**. De eerste keer dat je de punten van
+     een test naar een klas stuurt, maakt de tool die opdracht (op 20, zonder deadline). De
+     leerlingen zien die opdracht, met de uitleg dat ze niets moeten inleveren.
    - De punten worden ingevuld en **teruggegeven**: elke leerling ziet zijn of haar punt in
      Classroom.
    - Alleen wie getest is, krijgt een punt. In de tabel zie je per leerling "✓ staat erin".
-2. In Skore: klik op **+** › **Resultaten importeren** › **Google Classroom** en kies die opdracht.
+2. In Skore: klik op **+** › **Resultaten importeren** › **Google Classroom** en kies de opdracht van
+   die test.
 
 Na een herkansing zie je "nog niet" bij die leerling. Klik dan opnieuw op **Zet de punten in
-Classroom**: alleen de gewijzigde punten gaan mee, naar dezelfde opdracht.
+Classroom**: alleen de gewijzigde punten gaan mee, naar dezelfde opdracht van die test.
 
 Punten zetten kan alleen in een opdracht die de tool zelf maakte (zo werkt de Classroom-API).
 Maak de dactylo-opdracht dus niet zelf aan in Classroom.
@@ -112,10 +123,21 @@ kopiëren, of een bestand voor Excel met alle details.
 
 ## 7. Een nieuwe test toevoegen
 
-Kopieer in `js/testen.js` het blok van test 1, geef het een nieuwe `id` (bijvoorbeeld
-`bovenste-rij`) en pas `titel`, `toetsen`, `tekst` en de drempels aan. De test verschijnt vanzelf
-in de keuzelijst bovenaan. Verander de `id` van een test niet meer zodra er resultaten mee bewaard
-zijn.
+Kopieer in `js/testen.js` het blok van een bestaande test (test 2 is het voorbeeld), geef het een
+nieuwe `id` (bijvoorbeeld `onderste-rij`) en pas `titel`, `toetsen`, `uitleg`, `tekst` en de
+drempels aan. De test verschijnt vanzelf in de keuzelijst bovenaan, en **Zet de punten in
+Classroom** maakt er een eigen opdracht voor. Verander de `id` van een test niet meer zodra er
+resultaten mee bewaard zijn.
+
+Schrijf de tekst met alleen toetsen uit `toetsen`: kleine letters, de woorden gescheiden door één
+spatie, ongeveer 300 tekens, zodat elke vinger aan bod komt. Test 2 begint met elke vinger
+afzonderlijk (`rrr uuu eee …`), gaat dan over op echte woorden en eindigt met combinaties en
+langere woorden.
+
+De zes vragen over de techniek staan onderaan in dat bestand en gelden voor elke test. Noemt een
+vraag toetsen (vraag 3 en 4 doen dat), geef de test dan een eigen tekst voor die vraag, met
+`vragen: { handen: { vraag: '…' }, basis: { vraag: '…' } }` in het blok van de test. De antwoorden
+en de punten blijven die van onderaan.
 
 ## 8. De koppeling met Google instellen (eenmalig)
 
@@ -149,3 +171,9 @@ versie, nagelezen op 4 oktober 2026); in een Nederlandse console kunnen ze ander
 1024×768 en een smal scherm. De koppeling met Google is getest tegen een nagebootste Classroom en
 Drive (verbinden, klaslijsten, opslaan, andere computer, herkansing, verlopen verbinding, onleesbaar
 bestand), nog niet met de echte. Nog niet met een klas gebruikt.*
+
+*Test 2 toegevoegd op 12 oktober 2026. Getest in Chrome (1366×768, 1024×768 en een smal scherm) met
+gesimuleerde AZERTY-aanslagen en een nagebootste Classroom en Drive: beide tests naast elkaar, een
+eigen opdracht per test en per klas, herkansing, een andere computer, de tabel met alle pogingen en
+de export voor Excel. Nog niet met de echte Classroom en Drive en nog niet met een klas. De
+drempels van test 2 zijn die van test 1: kijk na de eerste klas of ze passen bij de bovenste rij.*

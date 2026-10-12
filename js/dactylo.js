@@ -40,6 +40,8 @@
     rw: 'rechter wijsvinger', rm: 'rechter middelvinger', rr: 'rechter ringvinger', rp: 'rechterpink',
     duim: 'duim'
   };
+  // de toetsen met het streepje: daar liggen de wijsvingers, ook als de test ze niet gebruikt
+  var ANKER = { f: true, j: true };
 
   // ---------- hulpjes ----------
   function $(sel) { return document.querySelector(sel); }
@@ -187,12 +189,17 @@
     return 0;
   }
   function maxVan(drempels) { return drempels.length ? drempels[0][1] : 0; }
-  function techniekMax() {
-    return CFG.vragen.reduce(function (s, v) {
+  // de vragen van CFG.vragen; een test kan een vraag met dezelfde id vervangen (bv. omdat ze toetsen noemt)
+  function vragenVan(t) {
+    var eigen = t.vragen || {};
+    return CFG.vragen.map(function (v) { return eigen[v.id] ? Object.assign({}, v, eigen[v.id]) : v; });
+  }
+  function techniekMax(t) {
+    return vragenVan(t).reduce(function (s, v) {
       return s + Math.max.apply(null, v.opties.map(function (o) { return o[1]; }));
     }, 0);
   }
-  function totaalMax(test) { return maxVan(test.snelheid) + maxVan(test.nauwkeurigheid) + techniekMax(); }
+  function totaalMax(test) { return maxVan(test.snelheid) + maxVan(test.nauwkeurigheid) + techniekMax(test); }
 
   // ---------- resultaten opzoeken ----------
   function hoortBij(r, klas, l) {
@@ -304,8 +311,8 @@
       rij.forEach(function (c) {
         var k = el('span', 'kb-toets v-' + VINGER[c], c);
         k.setAttribute('data-toets', c);
-        if (t.toetsen.indexOf(c) < 0) k.classList.add('kb-uit');
-        if (c === 'f' || c === 'j') k.classList.add('kb-streep');
+        if (t.toetsen.indexOf(c) < 0 && !ANKER[c]) k.classList.add('kb-uit');
+        if (ANKER[c]) k.classList.add('kb-streep');
         r.appendChild(k);
       });
       box.appendChild(r);
@@ -503,7 +510,7 @@
 
     var box = $('#vragen');
     box.innerHTML = '';
-    CFG.vragen.forEach(function (v, vi) {
+    vragenVan(t).forEach(function (v, vi) {
       var fs = el('fieldset', 'vraag');
       fs.appendChild(el('legend', '', (vi + 1) + '. ' + v.vraag));
       var opts = el('div', 'opties');
@@ -540,7 +547,8 @@
 
   function berekenPunt() {
     var techniek = 0, beantwoord = 0;
-    CFG.vragen.forEach(function (v) {
+    var vragen = vragenVan(test.cfg);
+    vragen.forEach(function (v) {
       var a = beoordeling.antwoorden[v.id];
       if (a) { techniek += a.punten; beantwoord++; }
     });
@@ -549,7 +557,7 @@
     return {
       techniek: techniek,
       punt: max ? Math.round(som / max * MAX_PUNTEN * 10) / 10 : 0,
-      volledig: beantwoord === CFG.vragen.length
+      volledig: beantwoord === vragen.length
     };
   }
 
@@ -561,7 +569,7 @@
     var rij = el('div', 'totaal-rij');
     rij.appendChild(el('span', '', 'Snelheid ' + beoordeling.snelheid + '/' + maxVan(t.snelheid)));
     rij.appendChild(el('span', '', 'Nauwkeurigheid ' + beoordeling.nauwkeurigheid + '/' + maxVan(t.nauwkeurigheid)));
-    rij.appendChild(el('span', '', 'Techniek ' + p.techniek + '/' + techniekMax()));
+    rij.appendChild(el('span', '', 'Techniek ' + p.techniek + '/' + techniekMax(t)));
     box.appendChild(rij);
     var groot = el('p', 'totaal-punt');
     groot.appendChild(el('strong', '', puntTekst(p.punt)));
@@ -645,7 +653,7 @@
         tr.appendChild(el('td', '', datumTekst(r.datum)));
         tr.appendChild(el('td', 'getal', komma(r.wpm, 1)));
         tr.appendChild(el('td', 'getal', r.nauwkeurigheid + ' %'));
-        tr.appendChild(el('td', 'getal', r.puntenTechniek + '/' + techniekMax()));
+        tr.appendChild(el('td', 'getal', r.puntenTechniek + '/' + techniekMax(t)));
         tr.appendChild(el('td', 'getal sterk', puntTekst(r.punten)));
         tr.appendChild(el('td', 'getal', String(alle.length)));
         if (metGoogle) {
@@ -723,7 +731,7 @@
         tr.appendChild(el('td', '', datumTekst(r.datum) + (i === p.length - 1 ? ' (telt)' : '')));
         tr.appendChild(el('td', 'getal', komma(r.wpm, 1)));
         tr.appendChild(el('td', 'getal', r.nauwkeurigheid + ' %'));
-        tr.appendChild(el('td', 'getal', r.puntenTechniek + '/' + techniekMax()));
+        tr.appendChild(el('td', 'getal', r.puntenTechniek + '/' + techniekMax(t)));
         tr.appendChild(el('td', 'getal sterk', puntTekst(r.punten) + ' / 20'));
         var td = el('td');
         var w = el('button', 'btn btn-klein', 'Wissen');
@@ -816,7 +824,7 @@
     var t = huidigeTest();
     var rijen = [['Klas', 'Leerling', 'Test', 'Datum', 'Woorden per minuut', 'Nauwkeurigheid (%)', 'Fouten',
       'Snelheid (/' + maxVan(t.snelheid) + ')', 'Nauwkeurigheid (/' + maxVan(t.nauwkeurigheid) + ')',
-      'Techniek (/' + techniekMax() + ')', 'Punt (/20)', 'Opmerking']];
+      'Techniek (/' + techniekMax(t) + ')', 'Punt (/20)', 'Opmerking']];
     puntenLijst().forEach(function (x) {
       var r = x.r;
       rijen.push(r

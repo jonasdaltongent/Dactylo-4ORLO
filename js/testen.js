@@ -4,15 +4,20 @@
    Hier pas je de tests aan. De rest van de tool (js/dactylo.js) hoef je niet
    aan te raken.
 
-   Een test toevoegen: kopieer het blok van test 1, geef het een nieuwe "id"
-   en pas de rest aan. Verander de "id" van een test nooit meer nadat er
-   resultaten mee bewaard zijn: de resultaten hangen aan die id.
+   Een test toevoegen: kopieer het blok van een bestaande test, geef het een
+   nieuwe "id" en pas de rest aan. Verander de "id" van een test nooit meer
+   nadat er resultaten mee bewaard zijn: de resultaten hangen aan die id.
 
    Puntenverdeling per test (samen 20):
      snelheid        4 punten  (woorden per minuut, 1 woord = 5 tekens)
      nauwkeurigheid  4 punten  (% juiste aanslagen)
      techniek       12 punten  (de vragen hieronder, samen met de leerling)
    Telt het maximum niet op tot 20, dan rekent de tool het om naar 20.
+
+   De vragen onderaan gelden voor elke test. Noemt een vraag toetsen (zoals
+   "q s d f g links"), geef de test dan een eigen tekst voor die vraag, met
+   "vragen" in het blok van de test (zie test 2). Alleen de tekst die je opgeeft
+   wordt vervangen; de antwoordmogelijkheden en punten blijven die van onderaan.
    ========================================================================== */
 window.DACTYLO = {
   klassen: ['4ORLOa', '4ORLOb'],   // de Classroom-klassen heten zo, met eventueel iets erachter ("4ORLOa 2027")
@@ -38,10 +43,33 @@ window.DACTYLO = {
       // [minimum, punten]: van hoog naar laag. Heel haalbaar: 8 woorden per minuut = alle punten.
       snelheid: [[8, 4], [6, 3], [4, 2], [2, 1]],
       nauwkeurigheid: [[95, 4], [90, 3], [85, 2], [80, 1]]
+    },
+    {
+      id: 'bovenste-rij',
+      titel: 'Test 2 · De bovenste rij',
+      toetsen: 'azertyuiop',
+      uitleg: 'Alleen de bovenste rij van het AZERTY-toetsenbord (a z e r t y u i o p) en de spatiebalk. De vingers gaan na elke toets terug naar de middelste rij.',
+      duur: 60,
+      // Eerst elke vinger afzonderlijk, dan echte woorden, dan combinaties en langere woorden.
+      tekst:
+        'rrr uuu eee iii zzz ooo aaa ppp ttt yyy ' +
+        'uur zou rit tip aap zei pit pap type pet zit typt pot tap put opa oor zat zout ' +
+        'zuur zeur zie toer ruit euro party puppy zeer yuppie raar taart ' +
+        'reza uiop azer poiu ruei zoap tryu erty yuio trez ' +
+        'route pauze opera aorta tapir poort trip typo aria tiara azuur uitzet',
+      // Zelfde drempels als test 1.
+      snelheid: [[8, 4], [6, 3], [4, 2], [2, 1]],
+      nauwkeurigheid: [[95, 4], [90, 3], [85, 2], [80, 1]],
+      // Alleen deze twee vragen noemen toetsen; de andere vier zijn die van onderaan.
+      vragen: {
+        handen: { vraag: 'Typte je met twee handen: a z e r t links, y u i o p rechts?' },
+        basis: { vraag: 'Lagen je wijsvingers op F en J, en kwamen je vingers na elke toets van de bovenste rij terug naar de middelste rij?' }
+      }
     }
   ],
 
   // Na de test vul je deze vragen samen met de leerling in. Samen 12 punten.
+  // Ze gelden voor elke test; "handen" en "basis" noemen toetsen en hebben bij test 2 een eigen tekst.
   vragen: [
     {
       id: 'kijken',
