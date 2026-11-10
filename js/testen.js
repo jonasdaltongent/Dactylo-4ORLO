@@ -65,6 +65,28 @@ window.DACTYLO = {
         handen: { vraag: 'Typte je met twee handen: a z e r t links, y u i o p rechts?' },
         basis: { vraag: 'Lagen je wijsvingers op F en J, en kwamen je vingers na elke toets van de bovenste rij terug naar de middelste rij?' }
       }
+    },
+    {
+      id: 'middelste-en-bovenste-rij',
+      titel: 'Test 3 · De middelste en de bovenste rij',
+      toetsen: 'azertyuiopqsdfghjklm',
+      uitleg: 'De middelste en de bovenste rij samen (q s d f g h j k l m en a z e r t y u i o p) en de spatiebalk. De vingers vertrekken van de middelste rij en gaan na elke toets van de bovenste rij terug.',
+      duur: 60,
+      // Dezelfde tekst als oefening 7 op de oefenpagina (jonasdaltongent.github.io/Dactylo-Middelste-en-Bovenste-Rij):
+      // eerst elke vinger op en neer, dan woorden, zinnen en woorden met q en y.
+      tekst:
+        'frf juj ded kik szs lol qaq mpm ftf jyj ' +
+        'fiets tafel stoel kast melk soep lamp deur dorp kip geit jas ' +
+        'zomer pauze sport spel film regel papier dokter potlood taart ' +
+        'de kat zit op de stoel ik eet graag soep de juf typt de les ' +
+        'yoga quiz pyjama aquarium hartje ruzie hoofd zeep lief tip',
+      // Zelfde drempels als test 1 en 2.
+      snelheid: [[8, 4], [6, 3], [4, 2], [2, 1]],
+      nauwkeurigheid: [[95, 4], [90, 3], [85, 2], [80, 1]],
+      vragen: {
+        handen: { vraag: 'Typte je met twee handen: a z e r t en q s d f g links, y u i o p en h j k l m rechts?' },
+        basis: { vraag: 'Lagen je wijsvingers op F en J, en kwamen je vingers na elke toets van de bovenste rij terug naar de middelste rij?' }
+      }
     }
   ],
 

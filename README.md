@@ -5,11 +5,16 @@ De leerling doet de test op jouw computer. Daarna vul je samen de vragen over de
 tool berekent automatisch een **punt op 20**. Alle resultaten blijven bewaard, zodat je de
 vooruitgang per leerling kunt volgen.
 
-Er zijn twee tests, elk met een eigen punt:
+Er zijn drie tests, elk met een eigen punt:
 
 - **Test 1: de middelste rij** van een AZERTY-toetsenbord (`q s d f g h j k l m` en de spatiebalk).
 - **Test 2: de bovenste rij** (`a z e r t y u i o p` en de spatiebalk). De vingers blijven bij de
   middelste rij en gaan na elke toets terug.
+- **Test 3: de middelste en de bovenste rij samen** (beide rijen en de spatiebalk). De leerlingen
+  oefenen hem eerst op de oefenpagina
+  [jonasdaltongent.github.io/Dactylo-Middelste-en-Bovenste-Rij](https://jonasdaltongent.github.io/Dactylo-Middelste-en-Bovenste-Rij/):
+  oefening 7 daar heeft dezelfde tekst, tijd en drempels. Pas je de ene aan, pas dan ook de andere aan
+  (`2026-2027/Dactylo - Oefenen 4ORLO - Middelste en bovenste rij/js/oefeningen.js`).
 
 ---
 
@@ -86,7 +91,7 @@ Alles staat in `js/testen.js`: de drempels, de vragen, de tijd en de tekst. Pas 
 
 1. Klik op **Resultaten**, kies de klas en klik op **Zet de punten in Classroom**.
    - Elke test heeft een eigen opdracht per klas, met de titel van de test: **Dactylo — Test 1 · De
-     middelste rij** en **Dactylo — Test 2 · De bovenste rij**. De eerste keer dat je de punten van
+     middelste rij**, **Dactylo — Test 2 · De bovenste rij** en **Dactylo — Test 3 · De middelste en de bovenste rij**. De eerste keer dat je de punten van
      een test naar een klas stuurt, maakt de tool die opdracht (op 20, zonder deadline). De
      leerlingen zien die opdracht, met de uitleg dat ze niets moeten inleveren.
    - De punten worden ingevuld en **teruggegeven**: elke leerling ziet zijn of haar punt in
@@ -177,3 +182,8 @@ gesimuleerde AZERTY-aanslagen en een nagebootste Classroom en Drive: beide tests
 eigen opdracht per test en per klas, herkansing, een andere computer, de tabel met alle pogingen en
 de export voor Excel. Nog niet met de echte Classroom en Drive en nog niet met een klas. De
 drempels van test 2 zijn die van test 1: kijk na de eerste klas of ze passen bij de bovenste rij.*
+
+*Test 3 toegevoegd op 10 november 2026 (Jonas: oefenen in het Dactylo-uur van di 17-11, de test op
+di 24-11). Vraag 3 en 4 hebben een eigen tekst (a z e r t en q s d f g links, y u i o p en h j k l m
+rechts). Dezelfde punten en drempels als test 1 en 2. Getest: de test verschijnt in de keuzelijst
+met zijn uitleg.*
