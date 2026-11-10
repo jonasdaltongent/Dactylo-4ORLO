@@ -11,9 +11,8 @@ Er zijn drie tests, elk met een eigen punt:
 - **Test 2: de bovenste rij** (`a z e r t y u i o p` en de spatiebalk). De vingers blijven bij de
   middelste rij en gaan na elke toets terug.
 - **Test 3: de middelste en de bovenste rij samen** (beide rijen en de spatiebalk). De leerlingen
-  oefenen hem eerst op de oefenpagina
-  [jonasdaltongent.github.io/Dactylo-Middelste-en-Bovenste-Rij](https://jonasdaltongent.github.io/Dactylo-Middelste-en-Bovenste-Rij/):
-  oefening 7 daar heeft dezelfde tekst, tijd en drempels. Pas je de ene aan, pas dan ook de andere aan
+  oefenen hem eerst op een eigen oefenpagina (adres in de README van
+  `2026-2027/Dactylo - Oefenen 4ORLO - Middelste en bovenste rij/`): oefening 7 daar heeft dezelfde tekst, tijd en drempels. Pas je de ene aan, pas dan ook de andere aan
   (`2026-2027/Dactylo - Oefenen 4ORLO - Middelste en bovenste rij/js/oefeningen.js`).
 
 ---
